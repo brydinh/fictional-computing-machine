@@ -1,10 +1,11 @@
 const express = require("express");
 const app = express();
+
 const pool = require("./db");
 
 app.use(express.json());
 
-async function isRangeGood(minFloat, maxFloat, key1, key2) {
+async function rangeCheck(minFloat, maxFloat, key1, key2) {
   const config = await pool.query("SELECT EXISTS(SELECT 1 FROM configuration WHERE key1 = ($1) " +
     " AND key2 = ($2) AND minFloat <= ($3) AND maxFloat >= ($4))",
     [key1, key2, maxFloat, minFloat]);
@@ -16,6 +17,7 @@ async function isRangeGood(minFloat, maxFloat, key1, key2) {
 app.get("/configs", async (req, res) => {
   try {
     const configs = await pool.query("SELECT * FROM configuration");
+    console.log("Printing configs");
     console.log(configs.rows);
 
     res.json(configs.rows);
@@ -45,8 +47,7 @@ app.post("/configs", async (req, res) => {
       value
     } = req.body;
 
-    // perform conflict check
-    isRangeGood(minFloat, maxFloat, key1, key2).then(async (result) => {
+    rangeCheck(minFloat, maxFloat, key1, key2).then(async (result) => {
       const [{exists}] = result;
 
       if (!exists) {
