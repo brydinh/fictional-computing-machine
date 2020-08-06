@@ -1,0 +1,23 @@
+{
+  "webServer" : {
+    "protocol" : "http",
+    "host": "localhost",
+    "port": 3000
+  },
+  "postgresql" : {
+    "user": "postgres",
+    "password": "password",
+    "database": "configdb",
+    "host": "localhost",
+    "port": 5432
+  },
+  "key1s": {
+    "keys": ["Accord", "Civic", "HR-V", "Odyssey", "Insight", "Pilot", "Passport"]
+  },
+  "key2s": {
+    "keys": ["V4", "V6", "V8"]
+  },
+  "values": {
+    "vals": ["Model1", "Model2", "Model3", "Model4", "Model1-6", "Model2-6"]
+  }
+}

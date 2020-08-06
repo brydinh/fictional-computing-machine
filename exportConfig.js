@@ -11,11 +11,11 @@ function createDict(configs) {
     const keyPair = config.key1 + "_" + config.key2;
     if (!set.has(keyPair)) {
       dict[keyPair] = [];
+      set.add(keyPair);
     }
     dict[keyPair].push([
       [config.minfloat, config.maxfloat], config.value
     ]);
-    set.add(keyPair);
   });
 
   return dict;
