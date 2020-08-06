@@ -1,7 +1,7 @@
 const fs = require("fs");
 const stringify = require("json-stringify-pretty-compact");
 
-const pool = require("./db");
+const pool = require("./db/db");
 
 function createDict(configs) {
   let dict = {};
