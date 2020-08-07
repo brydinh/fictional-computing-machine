@@ -110,5 +110,5 @@ app.delete("/configs/:id", async (req, res) => {
 });
 
 app.listen(config.get("webServer.port"), () => {
-  console.log("Server listening on port 3000");
+  console.log("Server listening on port " + config.get("webServer.port"));
 });
