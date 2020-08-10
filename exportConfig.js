@@ -28,11 +28,26 @@ async function exportJSON() {
     maxLength: 70
   }, 4);
 
-  fs.writeFile('./fep-configs.json', jsonString, err => {
+  Object.defineProperty(Date.prototype, 'YYYYMMDDHHMMSS', {
+      value: function() {
+          function pad2(n) {  // always returns a string
+              return (n < 10 ? '0' : '') + n;
+          }
+
+          return this.getFullYear() +
+                 pad2(this.getMonth() + 1) +
+                 pad2(this.getDate()) + "_" +
+                 pad2(this.getHours()) +
+                 pad2(this.getMinutes()) +
+                 pad2(this.getSeconds());
+      }
+  });
+
+  fs.writeFile("./fep_config_"+ new Date().YYYYMMDDHHMMSS() + ".json", jsonString, err => {
     if (err) {
-      console.log('Error writing file', err)
+      console.log("Error writing file", err);
     } else {
-      console.log('Successfully wrote file')
+      console.log("Successfully wrote file");
     }
   });
 }
