@@ -44,7 +44,7 @@ app.post("/configs", async (req, res) => {
           [key1, key2, minFloat, maxFloat, value]);
         res.json(newConfig.rows[0]);
       } else {
-        res.json("Already exists");
+        res.json("Range Conflict");
       }
     });
   } catch (err) {
@@ -85,7 +85,7 @@ app.put("/configs/:id", async (req, res) => {
             [key1, key2, minFloat, maxFloat, value, req.params.id]);
           res.json("Config was updated!");
         } else {
-          res.json("Already exists");
+          res.json("Range Conflict");
         }
       });
     } else {
