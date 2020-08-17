@@ -23,8 +23,8 @@ function groupEntries(lst) {
 
   groupings.push([]);
 
-  lst.forEach(function(flt){
-    if(flt <= range){
+  lst.forEach(function(flt) {
+    if (flt <= range) {
       groupings[indx].push(flt);
     } else {
       range = flt + .02;
@@ -58,27 +58,30 @@ lineReader.on('line', function(line) {
 
     // console.log(keyLists);
 
-    //TODO: Rewrite key to contain groupings
+    //TODO:
     // check to see if entries can be combined into one
     keyLists.forEach(async function(tuple) {
-      if (tuple.length == 3) {
+      if (tuple.length === 3) {
         [key1, key2, flt] = tuple;
 
         const keyPair = key1 + "_" + key2;
+
+        // console.log(tuple);
 
         if (!test.has(keyPair)) {
           test.set(keyPair, []);
         }
 
+
         test.get(keyPair).push(parseFloat(flt));
       }
     });
 
+    for (let [key, value] of test.entries()) {
+      test.set(key, groupEntries(value));
+    }
 
-    // console.log(test);
-
-
-    console.log(test.values());
+    console.log(test);
   }
 
   if (lnum < 2) {
@@ -89,8 +92,6 @@ lineReader.on('line', function(line) {
     test.clear();
   }
 });
-
-
 
 // let minFloat = parseFloat(flt) - 0.01;
 // let maxFloat = parseFloat(flt) + 0.01;
