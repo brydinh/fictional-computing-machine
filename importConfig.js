@@ -6,7 +6,6 @@ let value = "";
 let lnum = 0;
 let keyLists = [];
 let map = new Map();
-let test = new Map();
 
 function makeTuple(str) {
   return str
@@ -37,12 +36,51 @@ function groupEntries(lst) {
   return groupings;
 }
 
+function getValidEntries(lst) {
+  for (i = 0; i < lst.length - 1; i++) {
+    // check for overlap
+    if (lst[i + 1][0] <= lst[i][1]) {
+      console.log("Conflict at [" + lst[i] + "] and [" + lst[i + 1] + "]");
+      lst.splice(i, 2);
+    }
+  }
+  return lst;
+}
+
+function getMinMax(lst) {
+  let test = [];
+  let indx = 0;
+
+  lst.forEach(function(flts) {
+    let min = 0;
+    let max = 0;
+    test.push([]);
+
+    if (flts.length === 1) {
+      min = flts[0] - 0.01;
+      max = flts[0] + 0.01;
+    } else {
+      const calc = (flts[0] + flts[flts.length - 1]) / 2;
+      const center = Math.round(1000 * calc) / 1000;
+      min = center - 0.01;
+      max = center + 0.01;
+    }
+
+    const minFloat = Math.round(1000 * min) / 1000;
+    const maxFloat = Math.round(1000 * max) / 1000;
+    test[indx].push(minFloat, maxFloat);
+    indx++;
+  });
+
+  return test;
+}
+
 const lineReader = readline.createInterface({
   input: fs.createReadStream("importExample.cfg")
 });
 
-// TODO: Account for ambigious grouping and existing
-// configuration for diff val edge case and refactor code
+// TODO: Account for existing configuration
+// for diff val edge case and refactor code
 lineReader.on('line', function(line) {
   if (lnum == 0) {
     var newVal = line.match(/\[(.*?)\]/);
@@ -50,7 +88,7 @@ lineReader.on('line', function(line) {
     if (newVal) {
       value = newVal[1];
     }
-    console.log(value);
+    // console.log(value);
 
   } else if (lnum == 1) {
     keys = line.split(' = ').slice(1)[0].split(/\,\s?(?![^\(]*\))/);
@@ -77,38 +115,24 @@ lineReader.on('line', function(line) {
       }
     });
 
-    console.log(map);
+    // console.log(map);
 
     for (let [key, val] of map.entries()) {
       const groupedFlts = groupEntries(val);
+      const a = getMinMax(groupedFlts);
+      const b = getValidEntries(a);
 
-      console.log(groupedFlts);
-
-      groupedFlts.forEach(async function(flts) {
-        let min = 0;
-        let max = 0;
-
-        if (flts.length === 1) {
-          min = flts[0] - 0.01;
-          max = flts[0] + 0.01;
-        } else {
-          const calc = (flts[0] + flts[flts.length - 1]) / 2;
-          const center = Math.round(1000 * calc) / 1000;
-          min = center - 0.01;
-          max = center + 0.01;
-        }
-
-        const minFloat = Math.round(1000 * min) / 1000;
-        const maxFloat = Math.round(1000 * max) / 1000;
+      b.forEach(async function(flts) {
+        const [minFloat, maxFloat] = flts;
         const [key1, key2] = key.split("_");
 
         // console.log(key1 + " " + key2 + ": (" + minFloat + "-" + maxFloat + ") " + value);
 
-        // const newConfig = await pool.query("INSERT INTO configuration " +
-        //   "(key1, key2, minFloat, maxFloat, value) VALUES ($1, $2, $3, $4, $5) RETURNING *",
-        //   [key1, key2, minFloat, maxFloat, value]);
-        //
-        // console.log(newConfig.rows[0]);
+        const newConfig = await pool.query("INSERT INTO configuration " +
+          "(key1, key2, minFloat, maxFloat, value) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+          [key1, key2, minFloat, maxFloat, value]);
+
+        console.log(newConfig.rows[0]);
       });
     }
   }
