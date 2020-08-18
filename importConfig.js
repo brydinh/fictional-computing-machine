@@ -2,11 +2,6 @@ const fs = require("fs");
 const readline = require("readline");
 const pool = require("./db/db");
 
-let value = "";
-let lnum = 0;
-let keyLists = [];
-let map = new Map();
-
 function makeTuple(str) {
   return str
     .replace(/\s/g, "")
@@ -48,13 +43,13 @@ function getValidEntries(lst) {
 }
 
 function getMinMax(lst) {
-  let test = [];
+  let minMaxLst = [];
   let indx = 0;
 
   lst.forEach(function(flts) {
     let min = 0;
     let max = 0;
-    test.push([]);
+    minMaxLst.push([]);
 
     if (flts.length === 1) {
       min = flts[0] - 0.01;
@@ -68,80 +63,94 @@ function getMinMax(lst) {
 
     const minFloat = Math.round(1000 * min) / 1000;
     const maxFloat = Math.round(1000 * max) / 1000;
-    test[indx].push(minFloat, maxFloat);
+    minMaxLst[indx].push(minFloat, maxFloat);
     indx++;
   });
 
-  return test;
+  return minMaxLst;
 }
 
-const lineReader = readline.createInterface({
-  input: fs.createReadStream("importExample.cfg")
-});
+async function readFile() {
+  let test = new Map();
+  let value = "";
+  let lnum = 0;
 
-// TODO: Account for existing configuration
-// for diff val edge case and refactor code
-lineReader.on('line', function(line) {
-  if (lnum == 0) {
-    var newVal = line.match(/\[(.*?)\]/);
+  const lineReader = readline.createInterface({
+    input: fs.createReadStream("importExample.cfg")
+  });
 
-    if (newVal) {
-      value = newVal[1];
-    }
-    // console.log(value);
+  // TODO: Account for existing configuration
+  // for diff val edge case and refactor code
+  lineReader.on("line", function(line) {
+      let map = new Map();
+      let keyLists = [];
 
-  } else if (lnum == 1) {
-    keys = line.split(' = ').slice(1)[0].split(/\,\s?(?![^\(]*\))/);
-
-    // console.log(keys);
-
-    keys.forEach(function(a) {
-      keyLists.push(makeTuple(a)[0]);
-    });
-
-    // console.log(keyLists);
-
-    // makes sure all tuples has 3 values in it
-    keyLists.forEach(function(tuple) {
-      if (tuple.length === 3) {
-        [key1, key2, flt] = tuple;
-
-        const keyPair = key1 + "_" + key2;
-
-        if (!map.has(keyPair)) {
-          map.set(keyPair, []);
+      if (lnum == 0) {
+        var newVal = line.match(/\[(.*?)\]/);
+        if (newVal) {
+          value = newVal[1];
         }
-        map.get(keyPair).push(parseFloat(flt));
+
+      } else if (lnum == 1) {
+        keys = line.split(' = ').slice(1)[0].split(/\,\s?(?![^\(]*\))/);
+
+        keys.forEach(function(a) {
+          keyLists.push(makeTuple(a)[0]);
+        });
+
+        // makes sure all tuples has 3 values in it
+        keyLists.forEach(function(tuple) {
+          if (tuple.length === 3) {
+            [key1, key2, flt] = tuple;
+
+            const keyPair = key1 + "_" + key2;
+
+            if (!map.has(keyPair)) {
+              map.set(keyPair, []);
+            }
+            map.get(keyPair).push(parseFloat(flt));
+          } else {
+            console.log(tuple + " does not have 3 entries!");
+          }
+        });
+
+        // calculate min/Max floats and checks for conflict
+        for (let [key, val] of map.entries()) {
+          const groupedFlts = groupEntries(val);
+          const a = getMinMax(groupedFlts);
+          const b = getValidEntries(a);
+          map.set(key, b);
+        }
+
+        test.set(value, map);
       }
+
+      if (lnum < 2) {
+        lnum++;
+      } else {
+        lnum = 0;
+      }
+    })
+    .on("close", function() {
+      console.log(test);
+      // console.log(test.get("Model1"));
+      // console.log(test.get("Model2"));
+      // console.log(test.get("Model3"));
     });
+}
 
-    // console.log(map);
+readFile();
 
-    for (let [key, val] of map.entries()) {
-      const groupedFlts = groupEntries(val);
-      const a = getMinMax(groupedFlts);
-      const b = getValidEntries(a);
 
-      b.forEach(async function(flts) {
-        const [minFloat, maxFloat] = flts;
-        const [key1, key2] = key.split("_");
-
-        // console.log(key1 + " " + key2 + ": (" + minFloat + "-" + maxFloat + ") " + value);
-
-        const newConfig = await pool.query("INSERT INTO configuration " +
-          "(key1, key2, minFloat, maxFloat, value) VALUES ($1, $2, $3, $4, $5) RETURNING *",
-          [key1, key2, minFloat, maxFloat, value]);
-
-        console.log(newConfig.rows[0]);
-      });
-    }
-  }
-
-  if (lnum < 2) {
-    lnum++;
-  } else {
-    lnum = 0;
-    keyLists = [];
-    map.clear();
-  }
-});
+// b.forEach(async function(flts) {
+//   const [minFloat, maxFloat] = flts;
+//   const [key1, key2] = key.split("_");
+//
+//   // console.log(key1 + " " + key2 + ": (" + minFloat + "-" + maxFloat + ") " + value);
+//
+//   // const newConfig = await pool.query("INSERT INTO configuration " +
+//   //   "(key1, key2, minFloat, maxFloat, value) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+//   //   [key1, key2, minFloat, maxFloat, value]);
+//   //
+//   // console.log(newConfig.rows[0]);
+// });
