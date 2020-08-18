@@ -5,6 +5,7 @@ const pool = require("./db/db");
 let value = "";
 let lnum = 0;
 let keyLists = [];
+let map = new Map();
 let test = new Map();
 
 function makeTuple(str) {
@@ -40,7 +41,8 @@ const lineReader = readline.createInterface({
   input: fs.createReadStream("importExample.cfg")
 });
 
-// TODO: Account for edge cases & numerous values case
+// TODO: Account for ambigious grouping and existing
+// configuration for diff val edge case and refactor code
 lineReader.on('line', function(line) {
   if (lnum == 0) {
     var newVal = line.match(/\[(.*?)\]/);
@@ -48,17 +50,18 @@ lineReader.on('line', function(line) {
     if (newVal) {
       value = newVal[1];
     }
+    console.log(value);
 
   } else if (lnum == 1) {
     keys = line.split(' = ').slice(1)[0].split(/\,\s?(?![^\(]*\))/);
+
+    // console.log(keys);
 
     keys.forEach(function(a) {
       keyLists.push(makeTuple(a)[0]);
     });
 
     // console.log(keyLists);
-
-    //TODO: refactor & and account for numerous values case
 
     // makes sure all tuples has 3 values in it
     keyLists.forEach(function(tuple) {
@@ -67,21 +70,24 @@ lineReader.on('line', function(line) {
 
         const keyPair = key1 + "_" + key2;
 
-        // console.log(tuple);
-
-        if (!test.has(keyPair)) {
-          test.set(keyPair, []);
+        if (!map.has(keyPair)) {
+          map.set(keyPair, []);
         }
-        test.get(keyPair).push(parseFloat(flt));
+        map.get(keyPair).push(parseFloat(flt));
       }
     });
 
-    for (let [key, val] of test.entries()) {
+    console.log(map);
+
+    for (let [key, val] of map.entries()) {
       const groupedFlts = groupEntries(val);
+
+      console.log(groupedFlts);
 
       groupedFlts.forEach(async function(flts) {
         let min = 0;
         let max = 0;
+
         if (flts.length === 1) {
           min = flts[0] - 0.01;
           max = flts[0] + 0.01;
@@ -96,14 +102,13 @@ lineReader.on('line', function(line) {
         const maxFloat = Math.round(1000 * max) / 1000;
         const [key1, key2] = key.split("_");
 
-        console.log(key1 + " " + key2 + ": (" + minFloat + "-" + maxFloat + ") " + value);
+        // console.log(key1 + " " + key2 + ": (" + minFloat + "-" + maxFloat + ") " + value);
 
         // const newConfig = await pool.query("INSERT INTO configuration " +
         //   "(key1, key2, minFloat, maxFloat, value) VALUES ($1, $2, $3, $4, $5) RETURNING *",
         //   [key1, key2, minFloat, maxFloat, value]);
         //
         // console.log(newConfig.rows[0]);
-
       });
     }
   }
@@ -113,6 +118,6 @@ lineReader.on('line', function(line) {
   } else {
     lnum = 0;
     keyLists = [];
-    test.clear();
+    map.clear();
   }
 });
