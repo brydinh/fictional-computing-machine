@@ -58,9 +58,10 @@ lineReader.on('line', function(line) {
 
     // console.log(keyLists);
 
-    //TODO:
-    // check to see if entries can be combined into one
-    keyLists.forEach(async function(tuple) {
+    //TODO: refactor & and account for numerous values case
+
+    // makes sure all tuples has 3 values in it
+    keyLists.forEach(function(tuple) {
       if (tuple.length === 3) {
         [key1, key2, flt] = tuple;
 
@@ -71,17 +72,40 @@ lineReader.on('line', function(line) {
         if (!test.has(keyPair)) {
           test.set(keyPair, []);
         }
-
-
         test.get(keyPair).push(parseFloat(flt));
       }
     });
 
-    for (let [key, value] of test.entries()) {
-      test.set(key, groupEntries(value));
-    }
+    for (let [key, val] of test.entries()) {
+      const groupedFlts = groupEntries(val);
 
-    console.log(test);
+      groupedFlts.forEach(async function(flts) {
+        let min = 0;
+        let max = 0;
+        if (flts.length === 1) {
+          min = flts[0] - 0.01;
+          max = flts[0] + 0.01;
+        } else {
+          const calc = (flts[0] + flts[flts.length - 1]) / 2;
+          const center = Math.round(1000 * calc) / 1000;
+          min = center - 0.01;
+          max = center + 0.01;
+        }
+
+        const minFloat = Math.round(1000 * min) / 1000;
+        const maxFloat = Math.round(1000 * max) / 1000;
+        const [key1, key2] = key.split("_");
+
+        console.log(key1 + " " + key2 + ": (" + minFloat + "-" + maxFloat + ") " + value);
+
+        // const newConfig = await pool.query("INSERT INTO configuration " +
+        //   "(key1, key2, minFloat, maxFloat, value) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+        //   [key1, key2, minFloat, maxFloat, value]);
+        //
+        // console.log(newConfig.rows[0]);
+
+      });
+    }
   }
 
   if (lnum < 2) {
@@ -92,14 +116,3 @@ lineReader.on('line', function(line) {
     test.clear();
   }
 });
-
-// let minFloat = parseFloat(flt) - 0.01;
-// let maxFloat = parseFloat(flt) + 0.01;
-
-// console.log(key1 + "_" + key2 + ": (" + minFloat + "-" + maxFloat + ") " + value);
-
-// const newConfig = await pool.query("INSERT INTO configuration " +
-//   "(key1, key2, minFloat, maxFloat, value) VALUES ($1, $2, $3, $4, $5) RETURNING *",
-//   [key1, key2, minFloat, maxFloat, value]);
-
-// console.log(newConfig.rows[0]);
