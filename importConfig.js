@@ -42,6 +42,17 @@ function getValidEntries(lst) {
   return lst;
 }
 
+function getValidEntries2(lst) {
+  for (i = 0; i < lst.length - 1; i++) {
+    // check for overlap
+    if (lst[i + 1].minFloat <= lst[i].maxFloat) {
+      console.log("Conflict at [" + lst[i] + "] and [" + lst[i + 1] + "]");
+      lst.splice(i, 2);
+    }
+  }
+  return lst;
+}
+
 function getMinMax(lst) {
   let minMaxLst = [];
   let indx = 0;
@@ -70,8 +81,9 @@ function getMinMax(lst) {
   return minMaxLst;
 }
 
-async function readFile() {
+function readFile() {
   let test = new Map();
+  let kp = new Set();
   let value = "";
   let lnum = 0;
 
@@ -79,20 +91,19 @@ async function readFile() {
     input: fs.createReadStream("importExample.cfg")
   });
 
-  // TODO: Account for existing configuration
-  // for diff val edge case and refactor code
+  // TODO: refactor and optimize code
   lineReader.on("line", function(line) {
       let map = new Map();
       let keyLists = [];
 
       if (lnum == 0) {
         var newVal = line.match(/\[(.*?)\]/);
+
         if (newVal) {
           value = newVal[1];
         }
-
       } else if (lnum == 1) {
-        keys = line.split(' = ').slice(1)[0].split(/\,\s?(?![^\(]*\))/);
+        const keys = line.split(' = ').slice(1)[0].split(/\,\s?(?![^\(]*\))/);
 
         keys.forEach(function(a) {
           keyLists.push(makeTuple(a)[0]);
@@ -104,6 +115,7 @@ async function readFile() {
             [key1, key2, flt] = tuple;
 
             const keyPair = key1 + "_" + key2;
+            kp.add(keyPair);
 
             if (!map.has(keyPair)) {
               map.set(keyPair, []);
@@ -132,25 +144,56 @@ async function readFile() {
       }
     })
     .on("close", function() {
-      console.log(test);
-      // console.log(test.get("Model1"));
-      // console.log(test.get("Model2"));
-      // console.log(test.get("Model3"));
+
+      const frick = [];
+      let indx = 0;
+
+      kp.forEach(function(elmt) {
+        frick.push([]);
+        for (let value of test.keys()) {
+          const lol = test.get(value).get(elmt);
+          if (lol != null) {
+            lol.forEach(function(abs) {
+              const [minFloat, maxFloat] = abs
+              const dum = {
+                key: elmt,
+                value: value,
+                minFloat: minFloat,
+                maxFloat: maxFloat
+              };
+              frick[indx].push(dum);
+            });
+          }
+        }
+        indx++;
+      });
+
+      frick.forEach(function(hi) {
+        hi.sort((a, b) => (a.minFloat - b.minFloat));
+        hi = getValidEntries2(hi);
+
+        hi.forEach(async function(config) {
+          const {
+            key,
+            value,
+            minFloat,
+            maxFloat
+          } = config;
+
+          const [key1, key2] = key.split("_");
+
+          console.log(key1 + " " + key2 + ": (" + minFloat + "-" + maxFloat + ") " + value);
+
+          const newConfig = await pool.query("INSERT INTO configuration " +
+            "(key1, key2, minFloat, maxFloat, value) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+            [key1, key2, minFloat, maxFloat, value]);
+
+          console.log(newConfig.rows[0]);
+
+        });
+      });
+
     });
 }
 
 readFile();
-
-
-// b.forEach(async function(flts) {
-//   const [minFloat, maxFloat] = flts;
-//   const [key1, key2] = key.split("_");
-//
-//   // console.log(key1 + " " + key2 + ": (" + minFloat + "-" + maxFloat + ") " + value);
-//
-//   // const newConfig = await pool.query("INSERT INTO configuration " +
-//   //   "(key1, key2, minFloat, maxFloat, value) VALUES ($1, $2, $3, $4, $5) RETURNING *",
-//   //   [key1, key2, minFloat, maxFloat, value]);
-//   //
-//   // console.log(newConfig.rows[0]);
-// });
