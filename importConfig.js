@@ -1,6 +1,8 @@
 const fs = require("fs");
 const readline = require("readline");
+
 const pool = require("./db/db");
+const logger = require("./config/logger");
 
 function makeTuple(str) {
   return str
@@ -35,7 +37,7 @@ function getValidEntries(lst) {
   for (i = 0; i < lst.length - 1; i++) {
     // check for overlap
     if (lst[i + 1][0] <= lst[i][1]) {
-      console.log("Conflict at [" + lst[i] + "] and [" + lst[i + 1] + "]");
+      logger.error("Conflict at [" + lst[i] + "] and [" + lst[i + 1] + "]");
       lst.splice(i, 2);
     }
   }
@@ -46,7 +48,8 @@ function getValidEntries2(lst) {
   for (i = 0; i < lst.length - 1; i++) {
     // check for overlap
     if (lst[i + 1].minFloat <= lst[i].maxFloat) {
-      console.log("Conflict at [" + lst[i] + "] and [" + lst[i + 1] + "]");
+      logger.error("Conflict at [" + lst[i].minFloat + ", " + lst[i].maxFloat + "]" +
+        " and [" + lst[i + 1].minFloat + "," + lst[i + 1].maxFloat + "]");
       lst.splice(i, 2);
     }
   }
@@ -122,7 +125,7 @@ function readFile() {
             }
             map.get(keyPair).push(parseFloat(flt));
           } else {
-            console.log(tuple + " does not have 3 entries!");
+            logger.error(tuple + " does not have 3 entries!");
           }
         });
 
@@ -144,6 +147,12 @@ function readFile() {
       }
     })
     .on("close", function() {
+      // console.log(test);
+      // console.log(test.get("Model1"));
+      // console.log(test.get("Model2"));
+      // console.log(test.get("Model3"));
+
+
 
       const frick = [];
       let indx = 0;
@@ -180,15 +189,13 @@ function readFile() {
             maxFloat
           } = config;
 
-          const [key1, key2] = key.split("_");
-
-          console.log(key1 + " " + key2 + ": (" + minFloat + "-" + maxFloat + ") " + value);
-
-          const newConfig = await pool.query("INSERT INTO configuration " +
-            "(key1, key2, minFloat, maxFloat, value) VALUES ($1, $2, $3, $4, $5) RETURNING *",
-            [key1, key2, minFloat, maxFloat, value]);
-
-          console.log(newConfig.rows[0]);
+          // const [key1, key2] = key.split("_");
+          // // console.log(key1 + " " + key2 + ": (" + minFloat + "-" + maxFloat + ") " + value);
+          // const newConfig = await pool.query("INSERT INTO configuration " +
+          //   "(key1, key2, minFloat, maxFloat, value) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+          //   [key1, key2, minFloat, maxFloat, value]);
+          //
+          // console.log(newConfig.rows[0]);
 
         });
       });

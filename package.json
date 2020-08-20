@@ -12,6 +12,7 @@
     "config": "^3.3.1",
     "express": "^4.17.1",
     "json-stringify-pretty-compact": "^2.0.0",
-    "pg": "^8.3.0"
+    "pg": "^8.3.0",
+    "winston": "^3.3.3"
   }
 }
