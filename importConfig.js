@@ -1,5 +1,6 @@
 const fs = require("fs");
 const readline = require("readline");
+const { performance } = require('perf_hooks');
 
 const pool = require("./db/db");
 const logger = require("./config/logger");
@@ -164,4 +165,7 @@ function readFile() {
     });
 }
 
+var t0 = performance.now()
 readFile();
+var t1 = performance.now()
+console.log("Call took " + (t1 - t0) + " milliseconds.")
