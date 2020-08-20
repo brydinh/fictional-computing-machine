@@ -4,6 +4,9 @@ const readline = require("readline");
 const pool = require("./db/db");
 const logger = require("./config/logger");
 
+const { performance } = require('perf_hooks');
+
+
 function makeTuple(str) {
   return str
     .replace(/\s/g, "")
@@ -151,9 +154,6 @@ function readFile() {
       // console.log(test.get("Model1"));
       // console.log(test.get("Model2"));
       // console.log(test.get("Model3"));
-
-
-
       const frick = [];
       let indx = 0;
 
@@ -189,8 +189,8 @@ function readFile() {
             maxFloat
           } = config;
 
-          // const [key1, key2] = key.split("_");
-          // // console.log(key1 + " " + key2 + ": (" + minFloat + "-" + maxFloat + ") " + value);
+          const [key1, key2] = key.split("_");
+          console.log(key1 + " " + key2 + ": (" + minFloat + "-" + maxFloat + ") " + value);
           // const newConfig = await pool.query("INSERT INTO configuration " +
           //   "(key1, key2, minFloat, maxFloat, value) VALUES ($1, $2, $3, $4, $5) RETURNING *",
           //   [key1, key2, minFloat, maxFloat, value]);
@@ -203,4 +203,8 @@ function readFile() {
     });
 }
 
+
+var t0 = performance.now()
 readFile();
+var t1 = performance.now()
+console.log("Call took " + (t1 - t0) + " milliseconds.")
