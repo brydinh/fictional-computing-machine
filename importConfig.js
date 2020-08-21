@@ -81,8 +81,8 @@ function groupEntries(lst) {
 }
 
 function getMinMax(lst) {
-  let min = 0;
-  let max = 0;
+  let min;
+  let max;
 
   if (lst.length === 1) {
     min = lst[0] - 0.01;
