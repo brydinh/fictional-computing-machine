@@ -63,6 +63,7 @@ app.get("/configs/:id", async (req, res) => {
 });
 
 // update a config
+// TODO: Edge cases for update
 app.put("/configs/:id", async (req, res) => {
   try {
     const {
@@ -73,10 +74,11 @@ app.put("/configs/:id", async (req, res) => {
       value
     } = req.body;
 
-    const check = await pool.query("SELECT minFloat, maxFloat from configuration WHERE config_id = $1", [req.params.id]);
+    const check = await pool.query("SELECT key1, key2, minFloat, maxFloat from configuration WHERE config_id = $1", [req.params.id]);
 
     // see if min and max changed from original entry
-    if (check.rows[0].minfloat != minFloat || check.rows[0].maxfloat != maxFloat) {
+    if (check.rows[0].minfloat != minFloat || check.rows[0].maxfloat != maxFloat ||
+        check.rows[0].key1 != key1 || check.rows[0].key2 != key2) {
       rangeCheck(minFloat, maxFloat, key1, key2).then(async (result) => {
         const [{exists}] = result;
         if (!exists) {

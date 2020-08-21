@@ -113,7 +113,7 @@ function insertDB(map) {
         "(key1, key2, minFloat, maxFloat, value) VALUES ($1, $2, $3, $4, $5) RETURNING *",
         [key1, key2, minFloat, maxFloat, value]);
 
-      logger.info(newConfig.rows[0]);
+      // logger.info(newConfig.rows[0]);
     });
   }
 }
