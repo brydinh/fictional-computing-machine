@@ -81,7 +81,6 @@ function groupEntries(lst) {
 }
 
 function getMinMax(lst) {
-  console.log(lst);
   let min = 0;
   let max = 0;
 
@@ -91,7 +90,6 @@ function getMinMax(lst) {
   } else {
     const calc = (lst[0] + lst[lst.length - 1]) / 2;
     const center = Math.ceil(1000 * calc) / 1000;
-    console.log(center);
     min = center - 0.01;
     max = center + 0.01;
   }
@@ -103,7 +101,6 @@ function getMinMax(lst) {
 }
 
 function insertDB(map) {
-
   for (let [key, value] of map.entries()) {
     const [key1, key2] = key.split("_");
 
@@ -112,12 +109,11 @@ function insertDB(map) {
       const [minFloat, maxFloat] = flts;
 
       // console.log(key1 + " " + key2 + ": (" + minFloat + "-" + maxFloat + ") " + value);
-
       const newConfig = await pool.query("INSERT INTO configuration " +
         "(key1, key2, minFloat, maxFloat, value) VALUES ($1, $2, $3, $4, $5) RETURNING *",
         [key1, key2, minFloat, maxFloat, value]);
 
-      console.log(newConfig.rows[0]);
+      logger.info(newConfig.rows[0]);
     });
   }
 }
@@ -145,17 +141,14 @@ function readFile() {
 
         for (let [key, val] of m.entries()) {
           const groupedFlts = groupEntries(val);
-
           groupedFlts.forEach(function(flt) {
             const obj = {
               flts: flt,
               value: value
             }
-
             if (!map.has(key)) {
               map.set(key, []);
             }
-
             map.get(key).push(obj);
           });
         }
