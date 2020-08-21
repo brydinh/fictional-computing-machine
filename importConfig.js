@@ -81,6 +81,7 @@ function groupEntries(lst) {
 }
 
 function getMinMax(lst) {
+  console.log(lst);
   let min = 0;
   let max = 0;
 
@@ -89,7 +90,8 @@ function getMinMax(lst) {
     max = lst[0] + 0.01;
   } else {
     const calc = (lst[0] + lst[lst.length - 1]) / 2;
-    const center = Math.round(1000 * calc) / 1000;
+    const center = Math.ceil(1000 * calc) / 1000;
+    console.log(center);
     min = center - 0.01;
     max = center + 0.01;
   }
@@ -109,13 +111,13 @@ function insertDB(map) {
       const {flts, value} = elmt;
       const [minFloat, maxFloat] = flts;
 
-      console.log(key1 + " " + key2 + ": (" + minFloat + "-" + maxFloat + ") " + value);
+      // console.log(key1 + " " + key2 + ": (" + minFloat + "-" + maxFloat + ") " + value);
 
-      // const newConfig = await pool.query("INSERT INTO configuration " +
-      //   "(key1, key2, minFloat, maxFloat, value) VALUES ($1, $2, $3, $4, $5) RETURNING *",
-      //   [key1, key2, minFloat, maxFloat, value]);
-      //
-      // console.log(newConfig.rows[0]);
+      const newConfig = await pool.query("INSERT INTO configuration " +
+        "(key1, key2, minFloat, maxFloat, value) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+        [key1, key2, minFloat, maxFloat, value]);
+
+      console.log(newConfig.rows[0]);
     });
   }
 }
