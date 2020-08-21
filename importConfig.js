@@ -12,14 +12,45 @@ function makeTuple(str) {
     .map(el => [...el.replace(/[\()\]]/g, '').split(',')]);
 }
 
+function tupleCheck(lst) {
+  let map = new Map();
+
+  lst.forEach(function(tuple) {
+    if (tuple.length === 3) {
+      [key1, key2, flt] = tuple;
+      const keyPair = key1 + "_" + key2;
+      if (!map.has(keyPair)) {
+        map.set(keyPair, []);
+      }
+      map.get(keyPair).push(parseFloat(flt));
+    } else {
+      logger.error(tuple + " does not have 3 entries!");
+    }
+  });
+
+  return map;
+}
+
+function parseLine(line) {
+  let keyLists = [];
+
+  const keyStrings = line.split(' = ').slice(1)[0].split(/\,\s?(?![^\(]*\))/);
+
+  keyStrings.forEach(function(keyString) {
+    keyLists.push(makeTuple(keyString)[0]);
+  });
+
+  return keyLists;
+}
+
 function getValidEntries(lst) {
   lst.sort((a, b) => (a.flts[0] - b.flts[0]));
 
   for (i = 0; i < lst.length - 1; i++) {
     // check for overlap
     if (lst[i + 1].flts[0] <= lst[i].flts[1]) {
-      logger.error("Conflict at [" + lst[i].flts[0] + ", "+ lst[i].flts[1] + "]"
-      + " and [" + lst[i + 1].flts[0] + ", " + lst[i+1].flts[1] + "]");
+      logger.error("Conflict at [" + lst[i].flts[0] + ", " + lst[i].flts[1] + "]" +
+        " and [" + lst[i + 1].flts[0] + ", " + lst[i + 1].flts[1] + "]");
 
       lst.splice(i, 2);
     }
@@ -50,6 +81,9 @@ function groupEntries(lst) {
 }
 
 function getMinMax(lst) {
+  let min = 0;
+  let max = 0;
+
   if (lst.length === 1) {
     min = lst[0] - 0.01;
     max = lst[0] + 0.01;
@@ -67,6 +101,7 @@ function getMinMax(lst) {
 }
 
 function insertDB(map) {
+
   for (let [key, value] of map.entries()) {
     const [key1, key2] = key.split("_");
 
@@ -86,7 +121,7 @@ function insertDB(map) {
 }
 
 function readFile() {
-  let value = "";
+  let value;
   let lnum = 0;
   let map = new Map();
 
@@ -97,33 +132,14 @@ function readFile() {
   // TODO: refactor and optimize code
   lineReader.on("line", function(line) {
       if (lnum === 0) {
-        var newVal = line.match(/\[(.*?)\]/);
+        const newVal = line.match(/\[(.*?)\]/);
 
         if (newVal) {
           value = newVal[1];
         }
       } else if (lnum === 1) {
-        let keyLists = [];
-        let m = new Map();
-
-        const keyStrings = line.split(' = ').slice(1)[0].split(/\,\s?(?![^\(]*\))/);
-
-        keyStrings.forEach(function(keyString) {
-          keyLists.push(makeTuple(keyString)[0]);
-        });
-
-        keyLists.forEach(function(tuple) {
-          if (tuple.length === 3) {
-            [key1, key2, flt] = tuple;
-            const keyPair = key1 + "_" + key2;
-            if (!m.has(keyPair)) {
-              m.set(keyPair, []);
-            }
-            m.get(keyPair).push(parseFloat(flt));
-          } else {
-            logger.error(tuple + " does not have 3 entries!");
-          }
-        });
+        let keyLists = parseLine(line);
+        let m = tupleCheck(keyLists);
 
         for (let [key, val] of m.entries()) {
           const groupedFlts = groupEntries(val);
@@ -148,7 +164,6 @@ function readFile() {
       } else {
         lnum = 0;
       }
-
     })
     .on("close", function() {
       for (let value of map.values()) {
