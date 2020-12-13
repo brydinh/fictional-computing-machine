@@ -2,115 +2,106 @@ const express = require("express");
 const config = require("config");
 
 const pool = require("./db/db");
+const logger = require("./config/logger");
 
 const app = express();
 
 app.use(express.json());
 
-async function rangeCheck(minFloat, maxFloat, key1, key2) {
-  const config = await pool.query("SELECT EXISTS(SELECT 1 FROM configuration WHERE key1 = ($1) " +
-    " AND key2 = ($2) AND minFloat <= ($3) AND maxFloat >= ($4))",
-    [key1, key2, maxFloat, minFloat]);
 
-  return config.rows;
-}
-
-// get all configs
+/**
+ * Route to retrieve all Valve Configurations with a GET request
+ * @param {String} configs the route name
+ * @param {async function} async async function
+ */
 app.get("/configs", async (req, res) => {
   try {
-    const configs = await pool.query("SELECT * FROM configuration");
-    res.json(configs.rows);
+    logger.info("GET request received! Querying all avaliable entries...");
+
+    const entries = await pool.query("SELECT * FROM valveconfiguration");
+
+    logger.info("Sucessfully queried. Sending back response...");
+    res.json(entries.rows);
   } catch (err) {
-    console.error(err.message);
+    logger.error(err.message);
   }
 });
 
-// insert a config
+
+/**
+ * Route to retrieve a Valve Configuration with a GET request
+ * @param {String} configs the route name
+ * @param {async function} async async function
+ */
+app.get("/configs/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+
+    logger.info("GET request received! Querying for an entry...");
+
+    const entry = await pool.query(
+      "SELECT * FROM valveconfiguration " +
+      "WHERE id = ($1)", [id]);
+
+    logger.info("Sucessfully queried. Sending back response...");
+    res.json(entry.rows[0]);
+  } catch (err) {
+    logger.error(err.message);
+  }
+});
+
+
+/**
+ * Route to insert a new Valve Configuration with a POST request
+ * @param {String} configs the route name
+ * @param {async function} async async function
+ */
 app.post("/configs", async (req, res) => {
   try {
     const {
-      key1,
-      key2,
-      minFloat,
-      maxFloat,
-      value
+      duration,
+      days_of_week,
+      start_time
     } = req.body;
 
-    rangeCheck(minFloat, maxFloat, key1, key2).then(async (result) => {
-      const [{exists}] = result;
-      if (!exists) {
-        const newConfig = await pool.query("INSERT INTO configuration " +
-          "(key1, key2, minFloat, maxFloat, value) VALUES ($1, $2, $3, $4, $5) RETURNING *",
-          [key1, key2, minFloat, maxFloat, value]);
-        res.json(newConfig.rows[0]);
-      } else {
-        res.json("Range Conflict");
-      }
-    });
+    logger.info("POST request received! Creating new entry...");
+
+    const newEntry = await pool.query(
+      "INSERT INTO valveconfiguration " +
+      "(duration, days_of_week, start_time, posted_timestamp) " +
+      "VALUES ($1, $2, $3, current_timestamp) " +
+      "RETURNING *", [duration, days_of_week, start_time]);
+
+    logger.info("Created new entry. Sending back response...");
+    res.json(newEntry.rows[0]);
   } catch (err) {
-    console.error(err.message);
+    logger.error(err.message);
   }
 });
 
-// get a config
-app.get("/configs/:id", async (req, res) => {
-  try {
-    const config = await pool.query("SELECT * FROM configuration WHERE config_id = ($1)", [req.params.id]);
-    res.json(config.rows[0]);
-  } catch (err) {
-    console.error(err.message);
-  }
-});
 
-// update a config
-// TODO: Edge cases for update
-app.put("/configs/:id", async (req, res) => {
-  try {
-    const {
-      key1,
-      key2,
-      minFloat,
-      maxFloat,
-      value
-    } = req.body;
-
-    const check = await pool.query("SELECT key1, key2, minFloat, maxFloat from configuration WHERE config_id = $1", [req.params.id]);
-
-    // see if min and max changed from original entry
-    if (check.rows[0].minfloat != minFloat || check.rows[0].maxfloat != maxFloat ||
-        check.rows[0].key1 != key1 || check.rows[0].key2 != key2) {
-      rangeCheck(minFloat, maxFloat, key1, key2).then(async (result) => {
-        const [{exists}] = result;
-        if (!exists) {
-          const updateConfig = await pool.query("UPDATE configuration SET key1 = $1, " +
-            "key2 = $2, minFloat = $3, maxFloat = $4, value = $5 WHERE config_id = $6 ",
-            [key1, key2, minFloat, maxFloat, value, req.params.id]);
-          res.json("Config was updated!");
-        } else {
-          res.json("Range Conflict");
-        }
-      });
-    } else {
-      const updateConfig = await pool.query("UPDATE configuration SET key1 = $1, " +
-        "key2 = $2, minFloat = $3, maxFloat = $4, value = $5 WHERE config_id = $6 ",
-        [key1, key2, minFloat, maxFloat, value, req.params.id]);
-      res.json("Config was updated!");
-    }
-  } catch (err) {
-    console.error(err.message);
-  }
-});
-
-// delete a config
+/**
+ * Route to remove a Valve Configuration with a DELETE request
+ * @param {String} configs the route name
+ * @param {async function} async async function
+ */
 app.delete("/configs/:id", async (req, res) => {
   try {
-    const deleteConfig = await pool.query("DELETE FROM configuration WHERE config_id = $1", [req.params.id]);
+    const id = req.params.id;
+
+    logger.info("DELETE request received! Removing entry...");
+
+    const removedEntry = await pool.query(
+      "DELETE FROM valveconfiguration WHERE id = ($1)", [id]);
+
+    logger.info("Deleted entry. Sending back response...");
     res.json("Config successfully deleted!");
   } catch (err) {
-    console.error(err.message);
+    logger.error(err.message);
   }
 });
 
+
 app.listen(config.get("webServer.port"), () => {
-  console.log("Server listening on port " + config.get("webServer.port"));
+  logger.info("Server listening on port " + config.get("webServer.port"));
 });

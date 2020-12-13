@@ -1,5 +1,5 @@
 {
-  "name": "fep-website-backend",
+  "name": "valve-backend",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -13,7 +13,6 @@
     "express": "^4.17.1",
     "json-stringify-pretty-compact": "^2.0.0",
     "pg": "^8.5.1",
-    "prototype2": "file:prototype2-1.0.0.tgz",
     "winston": "^3.3.3"
   },
   "bundleDependencies": {

@@ -1,10 +1,8 @@
-CREATE DATABASE ConfigDB;
+CREATE DATABASE ValveAutomation;
 
-CREATE TABLE Configuration (
-  Config_ID SERIAL PRIMARY KEY,
-  key1 VARCHAR(255),
-  key2 VARCHAR(255),
-  minFloat float,
-  maxFloat float,
-  value VARCHAR(255)
+CREATE TABLE ValveConfiguration (
+  id SERIAL PRIMARY KEY,
+  duration int,
+  posted_timestamp timestamp,
+  days_of_week boolean[7]
 );
